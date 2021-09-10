@@ -1,0 +1,10 @@
+{
+  "name": "apibridge",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^27.1.1"
+  }
+}
