@@ -1,7 +1,8 @@
 {
   "name": "@bonfire-xmpp/apibridge",
   "main": "index.js",
-  "version": "1.0.0",
+  "types": "index.d.ts",
+  "version": "1.0.1",
   "scripts": {
     "test": "jest"
   },
