@@ -98,6 +98,34 @@ test("function call", async () => {
   ).toEqual([3, 7]);
 });
 
+test("nested call", async () => {
+  expect.assertions(1);
+
+  const src = new Bridge();
+  const dst = new Bridge();
+  src.onsend = dst.feed.bind(dst);
+  dst.onsend = src.feed.bind(src);
+
+  dst.define({
+    math: {
+      arithmetic: {
+        async add(x, y) {
+          return await (x + y);
+        },
+      },
+    },
+  });
+
+  const { math: { arithmetic: { add } } } = src.fn;
+
+  expect(
+    await Promise.all([
+      add(1, 2),
+      add(3, 4),
+    ])
+  ).toEqual([3, 7]);
+});
+
 test("nonexistent function call", async () => {
   expect.assertions(2);
 

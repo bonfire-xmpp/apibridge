@@ -3,6 +3,23 @@ const EVENT     = 0,
       FN_RETURN = 2,
       FN_THROW  = 3;
 
+function callPromise(bridge, path) {
+  const inner = (path) => new Proxy(function() {}, {
+    get(_target, prop) {
+      return inner(path.concat([prop]));
+    },
+    apply(_target, _thisarg, args) {
+      const curid = bridge.id++;
+      const p = new Promise((resolve, reject) => {
+        bridge.promises[curid] = { resolve, reject };
+      });
+      bridge.onsend([FN_CALL, curid, path, args]);
+      return p;
+    },
+  });
+  return inner(path);
+}
+
 class Bridge {
   id = 0;
   listeners = {};
@@ -27,18 +44,7 @@ class Bridge {
     }
   }
   
-  fn = new Proxy(this, {
-    get(target, fn) {
-      return (...args) => {
-        const curid = target.id++;
-        const p = new Promise((resolve, reject) => {
-          target.promises[curid] = { resolve, reject };
-        });
-        target.onsend([FN_CALL, curid, fn, args]);
-        return p;
-      }
-    }
-  });
+  fn = callPromise(this, []);
 
   emit(event, mesg) {
     this.onsend([EVENT, event, mesg]);
@@ -66,7 +72,7 @@ class Bridge {
       case FN_CALL: {
         const [, id, fn, args] = frame;
         try {
-          this.onsend([FN_RETURN, id, await this.functions[fn](...args)]);
+          this.onsend([FN_RETURN, id, await fn.reduce((cur, key) => cur[key], this.functions)(...args)]);
         } catch (e) {
           this.onsend([FN_THROW, id, e]);
         }
